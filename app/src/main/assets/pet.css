@@ -87,6 +87,43 @@ body {
     animation: poke 0.35s ease;
 }
 
+/* ---- 游动姿态（自主游荡时） ---- */
+#pet.swim .creature {
+    animation: swimFloat 0.8s ease-in-out infinite;
+}
+#pet.swim .tentacle {
+    animation: swimSway 0.5s ease-in-out infinite;
+}
+#pet.swim .eye {
+    animation: none;
+}
+#pet.swim .glow {
+    animation: glowPulse 1.6s ease-in-out infinite;
+}
+
+/* ---- 趴下姿态（聊天/图标上） ---- */
+#pet.crouch .creature {
+    transform: translateY(14px) scaleY(0.7);
+    transform-box: fill-box;
+    transform-origin: center bottom;
+}
+#pet.crouch .tentacle {
+    animation: none;
+    transform: scaleY(1.15) translateY(2px);
+    transform-box: fill-box;
+    transform-origin: center top;
+}
+#pet.crouch .body {
+    animation: none;
+}
+#pet.crouch .glow {
+    animation: crouchGlow 3.5s ease-in-out infinite;
+}
+#pet.crouch .eye {
+    animation: none;
+    transform: translateY(2px);
+}
+
 /* ---- 水母动画 ---- */
 .creature {
     animation: float 3.5s ease-in-out infinite;
@@ -232,6 +269,21 @@ body {
     50% { transform: translateX(6px) scale(0.96); }
     75% { transform: translateX(-3px); }
     100% { transform: translateX(0); }
+}
+
+@keyframes swimFloat {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-3px) rotate(4deg); }
+}
+
+@keyframes swimSway {
+    0%, 100% { transform: rotate(-6deg) scaleY(1.12); }
+    50% { transform: rotate(6deg) scaleY(0.88); }
+}
+
+@keyframes crouchGlow {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.75; }
 }
 
 /* ---- 泡泡（JS 动态生成） ---- */

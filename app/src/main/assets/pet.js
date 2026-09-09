@@ -35,7 +35,7 @@ const idleLines = [
 ];
 const appLines = {
     'com.android.chrome': '又在冲浪',
-    'com.tencent.mm': '谁的消息',
+    'com.tencent.mm': '看什么呢',
     'com.tencent.mobileqq': 'QQ 响了',
     'com.netease.cloudmusic': '听歌不叫我',
     'com.bilibili.app.in': '看视频不带我',
@@ -69,21 +69,26 @@ function resetIdle() {
     }, 45000);
 }
 
-// 表情状态管理
+// 表情状态管理（mood：表情；pose：身体姿态）
 const MOOD_CLASSES = ['happy', 'shy', 'sleep', 'poke'];
+const POSE_CLASSES = ['swim', 'crouch'];
 function setMood(mood) {
     MOOD_CLASSES.forEach(c => pet.classList.remove(c));
     if (mood && MOOD_CLASSES.includes(mood)) pet.classList.add(mood);
 }
+function setPose(pose) {
+    POSE_CLASSES.forEach(c => pet.classList.remove(c));
+    if (pose && POSE_CLASSES.includes(pose)) pet.classList.add(pose);
+}
 
-// —— 泡泡：深海生物感（睡觉时不吐） ——
+// —— 泡泡：深海生物感（睡觉/趴下时不吐） ——
 const BUBBLE_COLORS = [
     'rgba(150,130,220,0.55)',
     'rgba(190,170,250,0.4)',
     'rgba(120,100,200,0.55)'
 ];
 function spawnBubble() {
-    if (pet.classList.contains('sleep')) return;
+    if (pet.classList.contains('sleep') || pet.classList.contains('crouch')) return;
     const b = document.createElement('div');
     b.className = 'bubble-float';
     b.style.left = (15 + Math.random() * 70) + '%';
@@ -99,7 +104,7 @@ setInterval(() => {
     if (Math.random() < 0.6) spawnBubble();
 }, 2600);
 
-// —— 随机大动作：偶尔翻个跟头/横移/缩成一团 ——
+// —— 随机大动作：偶尔翻个跟头/横移/缩成一团（只在趴着或发呆时） ——
 const BIG_MOVES = ['spin', 'dash', 'shrink'];
 const BIG_LINES = {
     spin: '（转了半圈）',
@@ -108,6 +113,7 @@ const BIG_LINES = {
 };
 setInterval(() => {
     if (document.hidden) return;
+    if (pet.classList.contains('swim') || pet.classList.contains('crouch')) return;
     const name = random(BIG_MOVES);
     pet.classList.add('big-' + name);
     if (Math.random() < 0.55) showBubble(BIG_LINES[name], 2000);
@@ -156,11 +162,17 @@ window.petEngine = {
         showBubble('要没电了……我眯一会');
         setMood('sleep');
     },
+    // —— 姿态控制（Android 侧调用） ——
+    setPose: function (pose) {
+        setPose(pose);
+    },
+    bump: function () {
+        pet.classList.add('poke');
+        setTimeout(() => pet.classList.remove('poke'), 350);
+    },
     // —— 大脑（AI）入口 ——
     say: function (text) {
-        // 按字数自适应停留：短句短停、长句长停（最长 9 秒）
-        var duration = Math.min(9000, 1800 + (text || '').length * 220);
-        showBubble(text, duration);
+        showBubble(text, 5000);
     },
     setMood: function (mood) {
         setMood(mood);
