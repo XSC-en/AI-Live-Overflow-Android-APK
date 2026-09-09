@@ -50,6 +50,7 @@ class OverlayService : Service() {
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
+    private val mainScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
     private var windowManager: WindowManager? = null
     private var overlayView: WebView? = null
@@ -522,83 +523,87 @@ class OverlayService : Service() {
     // ---------- 自主游荡 ----------
 
     private fun startWander() {
-        wanderJob = serviceScope.launch {
+        wanderJob = mainScope.launch {
             var restUntil = 0L
             val random = Random()
             while (true) {
                 delay(WANDER_TICK_MS)
-                if (pausedByTouch) continue
+                try {
+                    if (pausedByTouch) continue
 
-                val wm = windowManager ?: continue
-                val view = overlayView ?: continue
-                val p = params ?: continue
-                val dm = resources.displayMetrics
-                val screenW = dm.widthPixels
-                val screenH = dm.heightPixels
+                    val wm = windowManager ?: continue
+                    val view = overlayView ?: continue
+                    val p = params ?: continue
+                    val dm = resources.displayMetrics
+                    val screenW = dm.widthPixels
+                    val screenH = dm.heightPixels
 
-                // 聊天/社交类 app：游到屏幕底部中央趴着（像趴在消息/输入框上）
-                if (lastForegroundApp in CHAT_APPS) {
-                    val targetX = (screenW - p.width) / 2
-                    val targetY = screenH - p.height - dpToPx(6)
-                    val dx = (targetX - p.x).toFloat()
-                    val dy = (targetY - p.y).toFloat()
-                    val dist = Math.hypot(dx.toDouble(), dy.toDouble()).toFloat()
-                    if (dist > 10f) {
-                        val step = 6f
-                        p.x += (dx / dist * step).toInt()
-                        p.y += (dy / dist * step).toInt()
-                        wm.updateViewLayout(view, p)
-                    } else {
-                        // 到位了，趴下
-                        if (crouchedApp != lastForegroundApp) {
-                            crouchedApp = lastForegroundApp
-                            js("setPose('crouch')")
-                            if (random.nextInt(4) == 0) js("say('（趴这儿看你）')")
+                    // 聊天/社交类 app：游到屏幕底部中央趴着（像趴在消息/输入框上）
+                    if (lastForegroundApp in CHAT_APPS) {
+                        val targetX = (screenW - p.width) / 2
+                        val targetY = screenH - p.height - dpToPx(6)
+                        val dx = (targetX - p.x).toFloat()
+                        val dy = (targetY - p.y).toFloat()
+                        val dist = Math.hypot(dx.toDouble(), dy.toDouble()).toFloat()
+                        if (dist > 10f) {
+                            val step = 6f
+                            p.x += (dx / dist * step).toInt()
+                            p.y += (dy / dist * step).toInt()
+                            wm.updateViewLayout(view, p)
+                        } else {
+                            // 到位了，趴下
+                            if (crouchedApp != lastForegroundApp) {
+                                crouchedApp = lastForegroundApp
+                                js("setPose('crouch')")
+                                if (random.nextInt(4) == 0) js("say('（趴这儿看你）')")
+                            }
                         }
+                        continue
                     }
-                    continue
-                }
 
-                // 离开聊天 app，恢复游荡
-                if (crouchedApp.isNotEmpty()) {
-                    crouchedApp = ""
-                    js("setPose('swim')")
-                }
+                    // 离开聊天 app，恢复游荡
+                    if (crouchedApp.isNotEmpty()) {
+                        crouchedApp = ""
+                        js("setPose('swim')")
+                    }
 
-                // 歇息中
-                val now = System.currentTimeMillis()
-                if (now < restUntil) continue
+                    // 歇息中
+                    val now = System.currentTimeMillis()
+                    if (now < restUntil) continue
 
-                // 自由游荡
-                p.x += (dirX * WANDER_SPEED).toInt()
-                p.y += (dirY * WANDER_SPEED).toInt()
+                    // 自由游荡
+                    p.x += (dirX * WANDER_SPEED).toInt()
+                    p.y += (dirY * WANDER_SPEED).toInt()
 
-                var bounced = false
-                if (p.x <= 0) { p.x = 0; dirX = abs(dirX); bounced = true }
-                else if (p.x + p.width >= screenW) { p.x = screenW - p.width; dirX = -abs(dirX); bounced = true }
-                if (p.y <= 0) { p.y = 0; dirY = abs(dirY); bounced = true }
-                else if (p.y + p.height >= screenH) { p.y = screenH - p.height; dirY = -abs(dirY); bounced = true }
+                    var bounced = false
+                    if (p.x <= 0) { p.x = 0; dirX = abs(dirX); bounced = true }
+                    else if (p.x + p.width >= screenW) { p.x = screenW - p.width; dirX = -abs(dirX); bounced = true }
+                    if (p.y <= 0) { p.y = 0; dirY = abs(dirY); bounced = true }
+                    else if (p.y + p.height >= screenH) { p.y = screenH - p.height; dirY = -abs(dirY); bounced = true }
 
-                wm.updateViewLayout(view, p)
+                    wm.updateViewLayout(view, p)
 
-                if (bounced) {
-                    js("bump()")
-                    // 撞边后随机弹开
-                    dirX = (random.nextDouble() * 2 - 1)
-                    dirY = random.nextDouble() * 0.8 + 0.1
-                    continue
-                }
+                    if (bounced) {
+                        js("bump()")
+                        // 撞边后随机弹开
+                        dirX = (random.nextDouble() * 2 - 1)
+                        dirY = random.nextDouble() * 0.8 + 0.1
+                        continue
+                    }
 
-                // 小概率随机变向 / 停下来歇一会
-                if (random.nextInt(220) == 0) {
-                    dirX = random.nextDouble() * 2 - 1
-                    dirY = random.nextDouble() * 0.9 - 0.45
-                }
-                if (random.nextInt(360) == 0) {
-                    js("setPose('idle')")
-                    restUntil = now + 2500 + random.nextInt(4000).toLong()
-                } else if (random.nextInt(240) == 0) {
-                    js("setPose('swim')")
+                    // 小概率随机变向 / 停下来歇一会
+                    if (random.nextInt(220) == 0) {
+                        dirX = random.nextDouble() * 2 - 1
+                        dirY = random.nextDouble() * 0.9 - 0.45
+                    }
+                    if (random.nextInt(360) == 0) {
+                        js("setPose('idle')")
+                        restUntil = now + 2500 + random.nextInt(4000).toLong()
+                    } else if (random.nextInt(240) == 0) {
+                        js("setPose('swim')")
+                    }
+                } catch (_: Exception) {
+                    // 单帧异常忽略，继续游
                 }
             }
         }
