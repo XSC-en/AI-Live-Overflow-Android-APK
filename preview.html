@@ -125,7 +125,7 @@ h1 {
     transform-origin: center bottom;
 }
 .eye {
-    animation: blink 4s ease-in-out infinite;
+    animation: eyeMove 9s ease-in-out infinite;
     transform-box: fill-box;
     transform-origin: center;
 }
@@ -140,6 +140,17 @@ h1 {
 #pet.sleep .body { animation: sleepBreathe 5s ease-in-out infinite; }
 
 #pet.jump .creature { animation: jump 0.5s ease; }
+#pet.big-spin .creature {
+    animation: bigSpin 1.1s ease;
+    transform-box: fill-box;
+    transform-origin: center center;
+}
+#pet.big-dash .creature { animation: bigDash 0.8s ease; }
+#pet.big-shrink .creature {
+    animation: bigShrink 1.2s ease;
+    transform-box: fill-box;
+    transform-origin: center center;
+}
 
 /* 泡泡 */
 .bubble-float {
@@ -181,6 +192,31 @@ h1 {
 @keyframes blink {
     0%, 90%, 100% { transform: scaleY(1); }
     93%, 97% { transform: scaleY(0.1); }
+}
+@keyframes eyeMove {
+    0%, 100% { transform: translateX(0) scaleY(1); }
+    3%, 6% { transform: translateX(0) scaleY(0.1); }
+    14% { transform: translateX(-7px) scaleY(1); }
+    20%, 26% { transform: translateX(0) scaleY(1); }
+    32%, 38% { transform: translateX(7px) scaleY(1); }
+    44% { transform: translateX(0) scaleY(1); }
+    47%, 50% { transform: translateX(0) scaleY(0.1); }
+    53% { transform: translateX(-5px) scaleY(1); }
+    60% { transform: translateX(0) scaleY(1); }
+}
+@keyframes bigSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+@keyframes bigDash {
+    0% { transform: translateX(0); }
+    30% { transform: translateX(-55px); }
+    70% { transform: translateX(55px); }
+    100% { transform: translateX(0); }
+}
+@keyframes bigShrink {
+    0%, 100% { transform: scale(1); }
+    35%, 60% { transform: scale(0.55); }
 }
 @keyframes happyBob {
     0%, 100% { transform: translateY(0) rotate(-2deg); }
@@ -435,6 +471,22 @@ setInterval(() => {
     const chance = mood === 'happy' ? 0.75 : 0.45;
     if (Math.random() < chance) spawnBubble();
 }, 2500);
+
+// —— 随机大动作 ——
+const BIG_MOVES = ['spin', 'dash', 'shrink'];
+const BIG_LINES = {
+    spin: '（转了半圈）',
+    dash: '（咻——）',
+    shrink: '（缩成一团）'
+};
+setInterval(() => {
+    if (document.hidden) return;
+    const name = random(BIG_MOVES);
+    pet.classList.add('big-' + name);
+    if (Math.random() < 0.55) showBubble(BIG_LINES[name], 2000);
+    setTimeout(() => pet.classList.remove('big-' + name), 1400);
+    resetIdle();
+}, 24000);
 
 window.petEngine = {
     onTap: function () {
