@@ -41,6 +41,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Calendar
+import java.util.Random
 import java.util.Timer
 import java.util.TimerTask
 import kotlin.math.abs
@@ -58,6 +59,14 @@ class OverlayService : Service() {
     private val screenshotObservers = mutableListOf<FileObserver>()
     private var whisperRunnable: Runnable? = null
 
+    // —— 自主游荡 ——
+    private var wanderJob: Job? = null
+    private var dirX = 1.0
+    private var dirY = 0.3
+    private var pausedByTouch = false
+    private var lastForegroundApp = ""
+    private var crouchedApp = ""
+
     companion object {
         private const val CHANNEL_ID = "pet_overlay_channel"
         private const val NOTIFICATION_ID = 1001
@@ -68,6 +77,17 @@ class OverlayService : Service() {
         private const val SUPABASE_URL = "https://vhufxigvmwloippzfbnu.supabase.co"
         private const val SUPABASE_KEY = "sb_publishable_3FYVmQUDcRDmKi9IwSM3ag_1Hv_1q0u"
         private const val BRAIN_POLL_MS = 4000L
+
+        // —— 游荡参数 ——
+        private const val WANDER_TICK_MS = 60L
+        private const val WANDER_SPEED = 4.2f
+        private val CHAT_APPS = setOf(
+            "com.tencent.mm", "com.tencent.mobileqq", "com.tencent.tim",
+            "org.telegram.messenger", "com.whatsapp",
+            "com.taobao.taobao", "com.ss.android.ugc.aweme", "com.smile.gifmaker",
+            "com.bilibili.app.in", "tv.danmaku.bili", "com.sina.weibo",
+            "com.zhihu.android", "com.xingin.xhs"
+        )
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -82,6 +102,7 @@ class OverlayService : Service() {
         registerBatteryReceiver()
         startWhispers()
         startBrainPolling()
+        startWander()
     }
 
     private fun setupOverlay() {
@@ -114,6 +135,7 @@ class OverlayService : Service() {
         }
 
         windowManager?.addView(overlayView, params)
+        js("setPose('swim')")
     }
 
     private inner class PetTouchListener : View.OnTouchListener {
@@ -131,6 +153,7 @@ class OverlayService : Service() {
             event ?: return false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    pausedByTouch = true
                     initialX = params?.x ?: 0
                     initialY = params?.y ?: 0
                     initialTouchX = event.rawX
@@ -153,6 +176,7 @@ class OverlayService : Service() {
                 }
 
                 MotionEvent.ACTION_UP -> {
+                    pausedByTouch = false
                     val elapsed = System.currentTimeMillis() - touchStartTime
                     if (!hasMoved) {
                         when {
@@ -206,6 +230,7 @@ class OverlayService : Service() {
                 val current = getForegroundApp()
                 if (current.isNotEmpty() && current != lastApp) {
                     lastApp = current
+                    lastForegroundApp = current
                     reportAppChange(current)
                     js("onAppChanged('${current.replace("'", "\\'")}')")
                 }
@@ -494,11 +519,97 @@ class OverlayService : Service() {
         }
     }
 
+    // ---------- 自主游荡 ----------
+
+    private fun startWander() {
+        wanderJob = serviceScope.launch {
+            var restUntil = 0L
+            val random = Random()
+            while (true) {
+                delay(WANDER_TICK_MS)
+                if (pausedByTouch) continue
+
+                val wm = windowManager ?: continue
+                val view = overlayView ?: continue
+                val p = params ?: continue
+                val dm = resources.displayMetrics
+                val screenW = dm.widthPixels
+                val screenH = dm.heightPixels
+
+                // 聊天/社交类 app：游到屏幕底部中央趴着（像趴在消息/输入框上）
+                if (lastForegroundApp in CHAT_APPS) {
+                    val targetX = (screenW - p.width) / 2
+                    val targetY = screenH - p.height - dpToPx(6)
+                    val dx = (targetX - p.x).toFloat()
+                    val dy = (targetY - p.y).toFloat()
+                    val dist = Math.hypot(dx.toDouble(), dy.toDouble()).toFloat()
+                    if (dist > 10f) {
+                        val step = 6f
+                        p.x += (dx / dist * step).toInt()
+                        p.y += (dy / dist * step).toInt()
+                        wm.updateViewLayout(view, p)
+                    } else {
+                        // 到位了，趴下
+                        if (crouchedApp != lastForegroundApp) {
+                            crouchedApp = lastForegroundApp
+                            js("setPose('crouch')")
+                            if (random.nextInt(4) == 0) js("say('（趴这儿看你）')")
+                        }
+                    }
+                    continue
+                }
+
+                // 离开聊天 app，恢复游荡
+                if (crouchedApp.isNotEmpty()) {
+                    crouchedApp = ""
+                    js("setPose('swim')")
+                }
+
+                // 歇息中
+                val now = System.currentTimeMillis()
+                if (now < restUntil) continue
+
+                // 自由游荡
+                p.x += (dirX * WANDER_SPEED).toInt()
+                p.y += (dirY * WANDER_SPEED).toInt()
+
+                var bounced = false
+                if (p.x <= 0) { p.x = 0; dirX = abs(dirX); bounced = true }
+                else if (p.x + p.width >= screenW) { p.x = screenW - p.width; dirX = -abs(dirX); bounced = true }
+                if (p.y <= 0) { p.y = 0; dirY = abs(dirY); bounced = true }
+                else if (p.y + p.height >= screenH) { p.y = screenH - p.height; dirY = -abs(dirY); bounced = true }
+
+                wm.updateViewLayout(view, p)
+
+                if (bounced) {
+                    js("bump()")
+                    // 撞边后随机弹开
+                    dirX = (random.nextDouble() * 2 - 1)
+                    dirY = random.nextDouble() * 0.8 + 0.1
+                    continue
+                }
+
+                // 小概率随机变向 / 停下来歇一会
+                if (random.nextInt(220) == 0) {
+                    dirX = random.nextDouble() * 2 - 1
+                    dirY = random.nextDouble() * 0.9 - 0.45
+                }
+                if (random.nextInt(360) == 0) {
+                    js("setPose('idle')")
+                    restUntil = now + 2500 + random.nextInt(4000).toLong()
+                } else if (random.nextInt(240) == 0) {
+                    js("setPose('swim')")
+                }
+            }
+        }
+    }
+
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
     }
 
     override fun onDestroy() {
+        wanderJob?.cancel()
         usageTimer?.cancel()
         screenshotObservers.forEach { it.stopWatching() }
         screenshotObservers.clear()
