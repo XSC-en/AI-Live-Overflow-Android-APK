@@ -158,7 +158,9 @@ window.petEngine = {
     },
     // —— 大脑（AI）入口 ——
     say: function (text) {
-        showBubble(text, 5000);
+        // 按字数自适应停留：短句短停、长句长停（最长 9 秒）
+        var duration = Math.min(9000, 1800 + (text || '').length * 220);
+        showBubble(text, duration);
     },
     setMood: function (mood) {
         setMood(mood);
