@@ -48,6 +48,7 @@ const appLines = {
 
 let idleTimer = null;
 let bubbleTimer = null;
+let mood = null;
 
 function showBubble(text, duration = 2500) {
     bubbleText.textContent = text;
@@ -71,10 +72,28 @@ function resetIdle() {
 
 // 表情状态管理
 const MOOD_CLASSES = ['happy', 'shy', 'sleep', 'poke'];
-function setMood(mood) {
+function setMood(m) {
     MOOD_CLASSES.forEach(c => pet.classList.remove(c));
-    if (mood && MOOD_CLASSES.includes(mood)) pet.classList.add(mood);
+    if (m && MOOD_CLASSES.includes(m)) pet.classList.add(m);
+    mood = m || null;
 }
+
+// —— 吐泡泡 ——
+function spawnBubble() {
+    const b = document.createElement('div');
+    b.className = 'bubble-float';
+    b.style.left = (38 + Math.random() * 24) + '%';
+    b.style.bottom = (57 + Math.random() * 5) + '%';
+    pet.appendChild(b);
+    setTimeout(() => b.remove(), 3300);
+}
+
+// 平常：每 2.5~5 秒随机吐一个；开心时更勤
+setInterval(() => {
+    if (mood === 'sleep') return;
+    const chance = mood === 'happy' ? 0.75 : 0.45;
+    if (Math.random() < chance) spawnBubble();
+}, 2500);
 
 window.petEngine = {
     onTap: function (count) {
@@ -121,8 +140,8 @@ window.petEngine = {
     say: function (text) {
         showBubble(text, 5000);
     },
-    setMood: function (mood) {
-        setMood(mood);
+    setMood: function (m) {
+        setMood(m);
     }
 };
 

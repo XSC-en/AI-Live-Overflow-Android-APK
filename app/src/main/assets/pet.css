@@ -88,9 +88,15 @@ body {
 }
 
 /* ---- 水母动画 ---- */
-/* 整只缓缓上浮下沉 */
+
+/* 整只缓缓上浮下沉 + 伞盖微倾（合并到一个 transform 动画） */
 .creature {
-    animation: float 3.5s ease-in-out infinite;
+    animation: floatTilt 3.5s ease-in-out infinite;
+}
+
+/* 肚子里的光：呼吸式脉动 */
+.glow {
+    animation: glowPulse 3.2s ease-in-out infinite;
 }
 
 /* 触手摇摆，相位错开 */
@@ -105,6 +111,19 @@ body {
 .t4 { animation-delay: -2.1s; }
 .t5 { animation-delay: -0.35s; }
 .t6 { animation-delay: -1.05s; }
+
+/* 触手尖端亮点：轻微脉冲发光 */
+.tentacle rect:last-child {
+    animation: tipGlow 2.4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+.t1 rect:last-child { animation-delay: 0.1s; }
+.t2 rect:last-child { animation-delay: 0.5s; }
+.t3 rect:last-child { animation-delay: 0.9s; }
+.t4 rect:last-child { animation-delay: 1.3s; }
+.t5 rect:last-child { animation-delay: 1.7s; }
+.t6 rect:last-child { animation-delay: 2.1s; }
 
 /* 伞盖轻微呼吸 */
 .body {
@@ -121,18 +140,67 @@ body {
 }
 #pet.sleep .eye { animation: none; }
 
+/* 开心：轻快弹跳 */
+#pet.happy .creature {
+    animation: happyBob 0.9s ease-in-out infinite;
+}
+
+/* 害羞：触手卷起来，身体缩一点 */
+#pet.shy .creature {
+    animation: shyShrink 1.4s ease-in-out infinite;
+}
+#pet.shy .tentacle {
+    animation: curl 1.4s ease-in-out infinite;
+}
+
+/* 睡觉：缓慢下沉漂动，触手静止垂下，光变暗 */
+#pet.sleep .creature {
+    animation: sleepDrift 4s ease-in-out infinite;
+}
+#pet.sleep .tentacle {
+    animation: none;
+}
+#pet.sleep .glow {
+    animation: sleepGlow 5s ease-in-out infinite;
+}
+#pet.sleep .body {
+    animation: sleepBreathe 5s ease-in-out infinite;
+}
+
 #pet.jump .creature {
     animation: jump 0.5s ease;
 }
 
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+/* ---- 泡泡 ---- */
+.bubble-float {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background: rgba(150, 120, 220, 0.55);
+    border-radius: 50%;
+    animation: bubbleRise 3.2s ease-in forwards;
+    pointer-events: none;
+    z-index: 5;
+}
+
+@keyframes floatTilt {
+    0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+    50% { transform: translateY(-8px) rotate(1.5deg); }
+}
+
+@keyframes glowPulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
 }
 
 @keyframes sway {
     0%, 100% { transform: rotate(-2.5deg); }
     50% { transform: rotate(2.5deg); }
+}
+
+@keyframes tipGlow {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
 }
 
 @keyframes breathe {
@@ -143,6 +211,36 @@ body {
 @keyframes blink {
     0%, 90%, 100% { transform: scaleY(1); }
     93%, 97% { transform: scaleY(0.1); }
+}
+
+@keyframes happyBob {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-14px) rotate(2deg); }
+}
+
+@keyframes shyShrink {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(2px) scale(0.96); }
+}
+
+@keyframes curl {
+    0%, 100% { transform: scaleY(0.9); }
+    50% { transform: scaleY(0.72); }
+}
+
+@keyframes sleepDrift {
+    0%, 100% { transform: translateY(3px) rotate(-0.5deg); }
+    50% { transform: translateY(7px) rotate(0.5deg); }
+}
+
+@keyframes sleepGlow {
+    0%, 100% { opacity: 0.22; }
+    50% { opacity: 0.4; }
+}
+
+@keyframes sleepBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.01); }
 }
 
 @keyframes jump {
@@ -158,6 +256,12 @@ body {
     50% { transform: translateX(6px) scale(0.96); }
     75% { transform: translateX(-3px); }
     100% { transform: translateX(0); }
+}
+
+@keyframes bubbleRise {
+    0% { transform: translateY(0) scale(1); opacity: 0.7; }
+    60% { opacity: 0.5; }
+    100% { transform: translateY(-48px) scale(1.3); opacity: 0; }
 }
 
 /* 气泡 */
