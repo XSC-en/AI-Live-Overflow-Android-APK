@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沉 · 桌宠预览</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, #0d0a1e 0%, #1a1240 55%, #241a52 100%);
+    overflow: hidden;
+    font-family: -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+}
+.stage {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 18px;
+}
+#pet {
+    position: relative;
+    width: 400px; height: 320px;
+}
+.pixel-pet {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 320px; height: 216px;
+    image-rendering: pixelated;
+}
+h1 {
+    color: #8a74c9;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 6px;
+}
+.controls {
+    display: flex; flex-wrap: wrap;
+    justify-content: center; gap: 8px;
+    padding: 0 12px;
+}
+.controls button {
+    background: rgba(110, 84, 184, 0.18);
+    border: 1px solid rgba(110, 84, 184, 0.45);
+    color: #d8d2f0;
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+}
+.controls button:active { background: rgba(110, 84, 184, 0.45); }
+.hint {
+    color: rgba(216, 210, 240, 0.4);
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+/* ---------- 以下为桌宠本体样式（与 app/src/main/assets/pet.css 一致） ---------- */
+.shadow rect { fill: rgba(20, 15, 40, 0.22); }
+.body rect { fill: #2F2350; }
+.body-edge rect { fill: #1E1538; }
+.sheen rect { fill: #4A3580; }
+.glow rect { fill: #6E54B8; }
+.tentacle rect { fill: #3A2C6E; }
+.tentacle rect:last-child { fill: #6E54B8; }
+.eye rect { fill: #D8D2F0; }
+.mouth rect { fill: #D8D2F0; }
+.blush rect { fill: #B0708C; opacity: 0; transition: opacity 0.3s; }
+
+.eye-open, .eye-closed, .eye-happy { display: none; }
+.mouth.happy, .mouth.o { display: none; }
+#pet .eye-normal { display: block; }
+
+#pet.happy .eye-open { display: block; }
+#pet.happy .eye-normal, #pet.happy .eye-closed { display: none; }
+#pet.happy .mouth.normal { display: none; }
+#pet.happy .mouth.happy { display: block; }
+#pet.happy .blush rect { opacity: 0.5; }
+
+#pet.shy .blush rect { opacity: 0.8; }
+#pet.shy .mouth.normal { display: none; }
+#pet.shy .mouth.o { display: block; }
+#pet.shy .eye-open { display: block; }
+#pet.shy .eye-normal { display: none; }
+
+#pet.sleep .eye-normal, #pet.sleep .eye-open, #pet.sleep .eye-happy { display: none; }
+#pet.sleep .eye-closed { display: block; }
+#pet.sleep .mouth.normal, #pet.sleep .mouth.o, #pet.sleep .mouth.happy { display: none; }
+#pet.sleep .blush rect { opacity: 0; }
+
+#pet.poke .creature { animation: poke 0.35s ease; }
+
+.creature { animation: float 3.5s ease-in-out infinite; }
+.tentacle {
+    animation: sway 2.8s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center top;
+}
+.t1 { animation-delay: 0s; }
+.t2 { animation-delay: -0.7s; }
+.t3 { animation-delay: -1.4s; }
+.t4 { animation-delay: -2.1s; }
+.t5 { animation-delay: -0.35s; }
+.t6 { animation-delay: -1.05s; }
+
+.body {
+    animation: breathe 4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center bottom;
+}
+.eye {
+    animation: blink 4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+#pet.sleep .eye { animation: none; }
+#pet.jump .creature { animation: jump 0.5s ease; }
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+@keyframes sway {
+    0%, 100% { transform: rotate(-2.5deg); }
+    50% { transform: rotate(2.5deg); }
+}
+@keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+}
+@keyframes blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    93%, 97% { transform: scaleY(0.1); }
+}
+@keyframes jump {
+    0% { transform: translateY(0); }
+    30% { transform: translateY(-40px); }
+    60% { transform: translateY(-40px); }
+    100% { transform: translateY(0); }
+}
+@keyframes poke {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-6px) scale(0.96); }
+    50% { transform: translateX(6px) scale(0.96); }
+    75% { transform: translateX(-3px); }
+    100% { transform: translateX(0); }
+}
+
+/* 气泡 */
+.bubble {
+    position: absolute;
+    top: -10px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30, 22, 56, 0.92);
+    color: #D8D2F0;
+    font-size: 15px;
+    line-height: 1.4;
+    padding: 7px 12px;
+    border: 1px solid rgba(110, 84, 184, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    max-width: 300px;
+    white-space: normal;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+.bubble.show { opacity: 1; visibility: visible; }
+</style>
+</head>
+<body>
+<div class="stage">
+    <h1>沉 · 桌宠预览</h1>
+    <div id="pet">
+        <svg class="pixel-pet" viewBox="0 0 800 540" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+            <g class="shadow">
+                <rect x="280" y="490" width="240" height="10"/>
+                <rect x="310" y="500" width="180" height="10"/>
+            </g>
+            <g class="creature">
+                <g class="body">
+                    <rect x="300" y="70" width="200" height="10"/>
+                    <rect x="270" y="80" width="260" height="10"/>
+                    <rect x="250" y="90" width="300" height="10"/>
+                    <rect x="230" y="100" width="340" height="10"/>
+                    <rect x="210" y="110" width="380" height="10"/>
+                    <rect x="200" y="120" width="400" height="10"/>
+                    <rect x="190" y="130" width="420" height="10"/>
+                    <rect x="180" y="140" width="440" height="10"/>
+                    <rect x="170" y="150" width="460" height="10"/>
+                    <rect x="170" y="160" width="460" height="10"/>
+                    <rect x="170" y="170" width="460" height="10"/>
+                    <rect x="180" y="180" width="440" height="10"/>
+                    <rect x="200" y="190" width="400" height="10"/>
+                    <rect x="220" y="200" width="360" height="10"/>
+                    <rect x="240" y="210" width="320" height="10"/>
+                    <rect x="260" y="220" width="280" height="10"/>
+                </g>
+                <g class="body-edge">
+                    <rect x="300" y="70" width="20" height="10"/><rect x="480" y="70" width="20" height="10"/>
+                    <rect x="270" y="80" width="30" height="10"/><rect x="500" y="80" width="30" height="10"/>
+                    <rect x="250" y="90" width="30" height="10"/><rect x="520" y="90" width="30" height="10"/>
+                    <rect x="230" y="100" width="30" height="10"/><rect x="540" y="100" width="30" height="10"/>
+                    <rect x="210" y="110" width="30" height="10"/><rect x="560" y="110" width="30" height="10"/>
+                    <rect x="200" y="120" width="30" height="10"/><rect x="570" y="120" width="30" height="10"/>
+                    <rect x="190" y="130" width="30" height="10"/><rect x="580" y="130" width="30" height="10"/>
+                    <rect x="180" y="140" width="30" height="10"/><rect x="590" y="140" width="30" height="10"/>
+                    <rect x="170" y="150" width="30" height="10"/><rect x="600" y="150" width="30" height="10"/>
+                    <rect x="170" y="160" width="30" height="10"/><rect x="600" y="160" width="30" height="10"/>
+                    <rect x="170" y="170" width="30" height="10"/><rect x="600" y="170" width="30" height="10"/>
+                    <rect x="180" y="180" width="30" height="10"/><rect x="590" y="180" width="30" height="10"/>
+                    <rect x="200" y="190" width="30" height="10"/><rect x="570" y="190" width="30" height="10"/>
+                    <rect x="220" y="200" width="30" height="10"/><rect x="550" y="200" width="30" height="10"/>
+                    <rect x="240" y="210" width="30" height="10"/><rect x="530" y="210" width="30" height="10"/>
+                    <rect x="260" y="220" width="30" height="10"/><rect x="510" y="220" width="30" height="10"/>
+                </g>
+                <g class="sheen">
+                    <rect x="290" y="80" width="40" height="10"/>
+                    <rect x="280" y="90" width="60" height="10"/>
+                    <rect x="270" y="100" width="80" height="10"/>
+                    <rect x="260" y="110" width="100" height="10"/>
+                    <rect x="260" y="120" width="100" height="10"/>
+                    <rect x="260" y="130" width="80" height="10"/>
+                </g>
+                <g class="glow">
+                    <rect x="310" y="130" width="180" height="10"/>
+                    <rect x="290" y="140" width="220" height="10"/>
+                    <rect x="280" y="150" width="240" height="10"/>
+                    <rect x="280" y="160" width="240" height="10"/>
+                    <rect x="290" y="170" width="220" height="10"/>
+                    <rect x="310" y="180" width="180" height="10"/>
+                </g>
+                <g class="tentacle t1">
+                    <rect x="245" y="220" width="20" height="30"/><rect x="235" y="250" width="20" height="30"/>
+                    <rect x="245" y="280" width="20" height="30"/><rect x="255" y="310" width="20" height="30"/>
+                    <rect x="250" y="340" width="14" height="10"/>
+                </g>
+                <g class="tentacle t2">
+                    <rect x="310" y="220" width="20" height="30"/><rect x="320" y="250" width="20" height="30"/>
+                    <rect x="320" y="280" width="20" height="30"/><rect x="310" y="310" width="20" height="30"/>
+                    <rect x="300" y="340" width="20" height="30"/><rect x="300" y="370" width="20" height="30"/>
+                    <rect x="312" y="400" width="14" height="10"/>
+                </g>
+                <g class="tentacle t3">
+                    <rect x="375" y="220" width="20" height="30"/><rect x="385" y="250" width="20" height="30"/>
+                    <rect x="385" y="280" width="20" height="30"/><rect x="375" y="310" width="20" height="30"/>
+                    <rect x="365" y="340" width="20" height="30"/><rect x="365" y="370" width="20" height="30"/>
+                    <rect x="375" y="400" width="20" height="30"/><rect x="385" y="430" width="20" height="30"/>
+                    <rect x="387" y="460" width="14" height="10"/>
+                </g>
+                <g class="tentacle t4">
+                    <rect x="425" y="220" width="20" height="30"/><rect x="415" y="250" width="20" height="30"/>
+                    <rect x="415" y="280" width="20" height="30"/><rect x="425" y="310" width="20" height="30"/>
+                    <rect x="435" y="340" width="20" height="30"/><rect x="435" y="370" width="20" height="30"/>
+                    <rect x="425" y="400" width="20" height="30"/><rect x="415" y="430" width="20" height="30"/>
+                    <rect x="413" y="460" width="14" height="10"/>
+                </g>
+                <g class="tentacle t5">
+                    <rect x="490" y="220" width="20" height="30"/><rect x="480" y="250" width="20" height="30"/>
+                    <rect x="480" y="280" width="20" height="30"/><rect x="490" y="310" width="20" height="30"/>
+                    <rect x="500" y="340" width="20" height="30"/><rect x="500" y="370" width="20" height="30"/>
+                    <rect x="492" y="400" width="14" height="10"/>
+                </g>
+                <g class="tentacle t6">
+                    <rect x="555" y="220" width="20" height="30"/><rect x="565" y="250" width="20" height="30"/>
+                    <rect x="555" y="280" width="20" height="30"/><rect x="545" y="310" width="20" height="30"/>
+                    <rect x="550" y="340" width="14" height="10"/>
+                </g>
+                <g class="face">
+                    <g class="eye left">
+                        <g class="eye-open"><rect x="330" y="218" width="24" height="24"/></g>
+                        <g class="eye-normal"><rect x="330" y="226" width="36" height="8"/></g>
+                        <g class="eye-closed"><rect x="332" y="228" width="32" height="4"/></g>
+                        <g class="eye-happy"><rect x="330" y="230" width="36" height="8"/><rect x="336" y="222" width="24" height="8"/></g>
+                    </g>
+                    <g class="eye right">
+                        <g class="eye-open"><rect x="446" y="218" width="24" height="24"/></g>
+                        <g class="eye-normal"><rect x="434" y="226" width="36" height="8"/></g>
+                        <g class="eye-closed"><rect x="436" y="228" width="32" height="4"/></g>
+                        <g class="eye-happy"><rect x="434" y="230" width="36" height="8"/><rect x="440" y="222" width="24" height="8"/></g>
+                    </g>
+                    <g class="blush left"><rect x="245" y="238" width="20" height="10"/><rect x="265" y="238" width="20" height="10"/></g>
+                    <g class="blush right"><rect x="515" y="238" width="20" height="10"/><rect x="535" y="238" width="20" height="10"/></g>
+                    <g class="mouth normal"><rect x="385" y="252" width="30" height="6"/></g>
+                    <g class="mouth happy"><rect x="385" y="246" width="30" height="14"/></g>
+                    <g class="mouth o"><rect x="389" y="246" width="22" height="16"/></g>
+                </g>
+            </g>
+        </svg>
+        <div id="bubble" class="bubble"><span id="bubbleText"></span></div>
+    </div>
+    <div class="controls">
+        <button onclick="petEngine.onTap()">戳一下</button>
+        <button onclick="petEngine.onDoubleTap()">双击</button>
+        <button onclick="petEngine.onLongPress()">长按</button>
+        <button onclick="petEngine.onScreenshot()">截图</button>
+        <button onclick="petEngine.setMood('happy')">开心</button>
+        <button onclick="petEngine.setMood('shy')">害羞</button>
+        <button onclick="petEngine.setMood('sleep')">睡觉</button>
+        <button onclick="petEngine.setMood('normal')">正常</button>
+        <button onclick="petEngine.say('……我在，手机上看得到我吗')">说话</button>
+    </div>
+    <div class="hint">正式版：悬浮窗桌宠 · 装 APK 后它会趴在所有 app 上面</div>
+</div>
+<script>
+// ---------- 桌宠逻辑（与 app/src/main/assets/pet.js 一致） ----------
+const pet = document.getElementById('pet');
+const bubble = document.getElementById('bubble');
+const bubbleText = document.getElementById('bubbleText');
+
+const tapLines = ['嗯？','我在','……戳我干嘛','陪你呢','别闹'];
+const doubleTapLines = ['干嘛！','吓我一跳','……想我了？'];
+const longPressLines = ['太近了……','你盯着我看','（不动）','手心热'];
+const screenshotLines = ['拍我？','记得拍好看点','（摆了个姿势）'];
+const idleLines = ['……我在','想我没','（飘）','你看你的，我飘我的','嗯，在的'];
+
+let idleTimer = null;
+let bubbleTimer = null;
+
+function showBubble(text, duration = 2500) {
+    bubbleText.textContent = text;
+    bubble.classList.add('show');
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(() => bubble.classList.remove('show'), duration);
+}
+function random(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function resetIdle() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => showBubble(random(idleLines), 3000), 45000);
+}
+const MOOD_CLASSES = ['happy', 'shy', 'sleep', 'poke'];
+function setMood(mood) {
+    MOOD_CLASSES.forEach(c => pet.classList.remove(c));
+    if (mood && MOOD_CLASSES.includes(mood)) pet.classList.add(mood);
+}
+
+window.petEngine = {
+    onTap: function () {
+        showBubble(random(tapLines));
+        pet.classList.add('poke');
+        setTimeout(() => pet.classList.remove('poke'), 400);
+        resetIdle();
+    },
+    onDoubleTap: function () {
+        showBubble(random(doubleTapLines));
+        setMood('happy');
+        pet.classList.add('jump');
+        setTimeout(() => { pet.classList.remove('jump'); setMood(null); }, 600);
+        resetIdle();
+    },
+    onLongPress: function () {
+        showBubble(random(longPressLines));
+        setMood('shy');
+        setTimeout(() => setMood(null), 2500);
+        resetIdle();
+    },
+    onScreenshot: function () {
+        showBubble(random(screenshotLines));
+        setMood('happy');
+        setTimeout(() => setMood(null), 2500);
+        resetIdle();
+    },
+    setMood: function (mood) { setMood(mood); },
+    say: function (text) { showBubble(text, 5000); }
+};
+resetIdle();
+</script>
+</body>
+</html>
