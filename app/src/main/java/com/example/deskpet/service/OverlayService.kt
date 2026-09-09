@@ -36,6 +36,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -63,9 +64,10 @@ class OverlayService : Service() {
         private const val PET_WIDTH_DP = 100
         private const val PET_HEIGHT_DP = 80
 
-        // 填上你的 Supabase 信息即可开启同步；留空则不上报
-        private const val SUPABASE_URL = ""
-        private const val SUPABASE_KEY = ""
+        // —— 沉 · 大脑通道（Supabase）——
+        private const val SUPABASE_URL = "https://vhufxigvmwloippzfbnu.supabase.co"
+        private const val SUPABASE_KEY = "sb_publishable_3FYVmQUDcRDmKi9IwSM3ag_1Hv_1q0u"
+        private const val BRAIN_POLL_MS = 4000L
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -79,6 +81,7 @@ class OverlayService : Service() {
         startScreenshotDetection()
         registerBatteryReceiver()
         startWhispers()
+        startBrainPolling()
     }
 
     private fun setupOverlay() {
@@ -360,7 +363,7 @@ class OverlayService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("🐾 AI Live Overflow")
+            .setContentTitle("🐙 沉 · 水母桌宠")
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_pet)
             .setContentIntent(pendingIntent)
@@ -386,15 +389,16 @@ class OverlayService : Service() {
         }
     }
 
+    // ---------- 上报：桌宠 → 大脑（pet_events） ----------
+
     private fun reportGesture(type: String) {
         if (SUPABASE_URL.isBlank() || SUPABASE_KEY.isBlank()) return
         serviceScope.launch {
             postToSupabase(
-                "gesture_log",
+                "pet_events",
                 JSONObject().apply {
-                    put("gesture_type", type)
-                    put("x", params?.x ?: 0)
-                    put("y", params?.y ?: 0)
+                    put("type", type)
+                    put("payload", "x=${params?.x ?: 0}&y=${params?.y ?: 0}")
                 }
             )
         }
@@ -404,11 +408,72 @@ class OverlayService : Service() {
         if (SUPABASE_URL.isBlank() || SUPABASE_KEY.isBlank()) return
         serviceScope.launch {
             postToSupabase(
-                "app_usage",
-                JSONObject().apply { put("package_name", packageName) }
+                "pet_events",
+                JSONObject().apply {
+                    put("type", "app_changed")
+                    put("payload", packageName)
+                }
             )
         }
     }
+
+    // ---------- 下行：大脑 → 桌宠（轮询 clawd_state） ----------
+
+    private fun startBrainPolling() {
+        if (SUPABASE_URL.isBlank() || SUPABASE_KEY.isBlank()) return
+        serviceScope.launch {
+            var lastMood = ""
+            var lastBubble = ""
+            while (true) {
+                delay(BRAIN_POLL_MS)
+                val state = fetchBrainState() ?: continue
+                val mood = state.first
+                val bubble = state.second
+                if (mood != lastMood) {
+                    lastMood = mood
+                    js("setMood('${escapeJs(mood)}')")
+                }
+                if (bubble.isNotEmpty() && bubble != lastBubble) {
+                    lastBubble = bubble
+                    js("say('${escapeJs(bubble)}')")
+                }
+            }
+        }
+    }
+
+    private suspend fun fetchBrainState(): Pair<String, String>? = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$SUPABASE_URL/rest/v1/clawd_state?select=mood,bubble&order=updated_at.desc&limit=1")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("apikey", SUPABASE_KEY)
+            conn.setRequestProperty("Authorization", "Bearer $SUPABASE_KEY")
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            val code = conn.responseCode
+            if (code == 200) {
+                val body = conn.inputStream.bufferedReader().readText()
+                val arr = JSONArray(body)
+                conn.disconnect()
+                if (arr.length() > 0) {
+                    val obj = arr.getJSONObject(0)
+                    return@withContext Pair(
+                        obj.optString("mood", "normal"),
+                        obj.optString("bubble", "")
+                    )
+                }
+                null
+            } else {
+                conn.disconnect()
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun escapeJs(s: String): String =
+        s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace("\r", " ")
 
     private suspend fun postToSupabase(table: String, body: JSONObject) {
         withContext(Dispatchers.IO) {
