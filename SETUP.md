@@ -12,9 +12,10 @@
 ## 二、桌宠 APK（身体）
 
 ### 方案 A：直接用本仓库的 Actions 构建（推荐）
-1. 把本仓库 fork 到你自己的 GitHub 账号（如果还不是你的）
-2. 打开 **Actions** 标签页 → 最新一次 **Build APK** → 等绿色对勾
-3. Artifacts 里下载 `app-debug-apk` → 解压 → 安装 `app-debug.apk`
+1. 打开 **Actions** 标签页 → **Build APK** 工作流 → 等绿色对勾
+2. Artifacts 里下载 `app-debug-apk` → 解压 → 安装 `app-debug.apk`
+
+> 注意：如果 fork 后发现 Actions 没自动跑，去 Actions 页面对 workflow 点 enable。
 
 ### 方案 B：本地构建
 ```bash
@@ -61,4 +62,5 @@ cd AI-Live-Overflow-Android-APK
 - 动画/配色：`pet.css`
 - 台词：`pet.js`（"沉"的话都在这里，想改语气改这里）
 
-形象预览：`docs/preview_states.png`（正常/开心/睡觉/害羞）
+形象：深蓝紫像素水母，六根带光点的触手，默认慵懒半闭眼；
+状态有正常 / 开心（弯眼+腮红）/ 睡觉 / 害羞（O 嘴+腮红）。
