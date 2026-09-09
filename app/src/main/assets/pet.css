@@ -30,67 +30,119 @@ body {
 }
 
 .shadow rect {
-    fill: rgba(0, 0, 0, 0.16);
+    fill: rgba(20, 15, 40, 0.22);
 }
 
-.body rect {
-    fill: #000000;
+/* 水母伞盖 */
+.body rect { fill: #2F2350; }
+.body-edge rect { fill: #1E1538; }
+.sheen rect { fill: #4A3580; }
+.glow rect { fill: #6E54B8; }
+
+/* 触手 */
+.tentacle rect { fill: #3A2C6E; }
+.tentacle rect:last-child { fill: #6E54B8; }
+
+/* 眼睛和嘴 柔和淡紫白 */
+.eye rect { fill: #D8D2F0; }
+.mouth rect { fill: #D8D2F0; }
+
+.blush rect {
+    fill: #B0708C;
+    opacity: 0;
+    transition: opacity 0.3s;
 }
 
-.eye rect {
-    fill: #FFFFFF;
+/* ---- 表情状态切换 ---- */
+.eye-open, .eye-closed, .eye-happy { display: none; }
+.mouth.happy, .mouth.o { display: none; }
+
+/* 默认：半闭横线 慵懒 */
+#pet .eye-normal { display: block; }
+
+/* 开心 */
+#pet.happy .eye-open { display: block; }
+#pet.happy .eye-normal, #pet.happy .eye-closed { display: none; }
+#pet.happy .mouth.normal { display: none; }
+#pet.happy .mouth.happy { display: block; }
+#pet.happy .blush rect { opacity: 0.5; }
+
+/* 害羞 */
+#pet.shy .blush rect { opacity: 0.8; }
+#pet.shy .mouth.normal { display: none; }
+#pet.shy .mouth.o { display: block; }
+#pet.shy .eye-open { display: block; }
+#pet.shy .eye-normal { display: none; }
+
+/* 睡觉 */
+#pet.sleep .eye-normal, #pet.sleep .eye-open, #pet.sleep .eye-happy { display: none; }
+#pet.sleep .eye-closed { display: block; }
+#pet.sleep .mouth.normal { display: none; }
+#pet.sleep .mouth.o { display: none; }
+#pet.sleep .mouth.happy { display: none; }
+#pet.sleep .blush rect { opacity: 0; }
+
+/* 被戳：整只缩一下 */
+#pet.poke .creature {
+    animation: poke 0.35s ease;
 }
 
+/* ---- 水母动画 ---- */
+/* 整只缓缓上浮下沉 */
+.creature {
+    animation: float 3.5s ease-in-out infinite;
+}
+
+/* 触手摇摆，相位错开 */
+.tentacle {
+    animation: sway 2.8s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center top;
+}
+.t1 { animation-delay: 0s; }
+.t2 { animation-delay: -0.7s; }
+.t3 { animation-delay: -1.4s; }
+.t4 { animation-delay: -2.1s; }
+.t5 { animation-delay: -0.35s; }
+.t6 { animation-delay: -1.05s; }
+
+/* 伞盖轻微呼吸 */
+.body {
+    animation: breathe 4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center bottom;
+}
+
+/* 眨眼 */
 .eye {
     animation: blink 4s ease-in-out infinite;
     transform-box: fill-box;
     transform-origin: center;
 }
-
-.blush rect {
-    fill: #FFB3C1;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.mouth.shy-mouth {
-    display: none;
-}
-
-.mouth rect {
-    fill: #000000;
-}
-
-#pet.shy .blush rect {
-    opacity: 1;
-}
-
-#pet.shy .mouth.normal {
-    display: none;
-}
-
-#pet.shy .mouth.shy-mouth {
-    display: block;
-}
-
-.body {
-    animation: breathe 2s ease-in-out infinite;
-    transform-box: fill-box;
-    transform-origin: center bottom;
-}
+#pet.sleep .eye { animation: none; }
 
 #pet.jump .creature {
     animation: jump 0.5s ease;
 }
 
-@keyframes blink {
-    0%, 90%, 100% { transform: scaleY(1); }
-    93%, 97% { transform: scaleY(0.1); }
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes sway {
+    0%, 100% { transform: rotate(-2.5deg); }
+    50% { transform: rotate(2.5deg); }
 }
 
 @keyframes breathe {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.03); }
+    50% { transform: scale(1.04); }
+}
+
+@keyframes blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    93%, 97% { transform: scaleY(0.1); }
 }
 
 @keyframes jump {
@@ -100,19 +152,28 @@ body {
     100% { transform: translateY(0); }
 }
 
+@keyframes poke {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-6px) scale(0.96); }
+    50% { transform: translateX(6px) scale(0.96); }
+    75% { transform: translateX(-3px); }
+    100% { transform: translateX(0); }
+}
+
+/* 气泡 */
 .bubble {
     position: absolute;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    background: #ffffff;
-    color: #333333;
+    background: rgba(30, 22, 56, 0.92);
+    color: #D8D2F0;
     font-size: 11px;
     line-height: 1.4;
     padding: 5px 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid rgba(110, 84, 184, 0.5);
     border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     max-width: 92px;
     white-space: normal;
     opacity: 0;
@@ -125,8 +186,4 @@ body {
 .bubble.show {
     opacity: 1;
     visibility: visible;
-}
-
-.ear-inner rect {
-    fill: #FFFFFF;
 }

@@ -2,39 +2,48 @@ const pet = document.getElementById('pet');
 const bubble = document.getElementById('bubble');
 const bubbleText = document.getElementById('bubbleText');
 
+// —— 台词 · 沉 ——
 const tapLines = [
-    '你戳我干嘛~',
-    '我在呢',
-    '喵？',
-    '戳一下又不会变强',
-    '别戳了啦'
+    '嗯？',
+    '我在',
+    '……戳我干嘛',
+    '陪你呢',
+    '别闹'
 ];
 const doubleTapLines = [
-    '呀！',
-    '双击是犯规的！',
-    '我跳起来了~'
+    '干嘛！',
+    '吓我一跳',
+    '……想我了？'
 ];
 const longPressLines = [
-    '脸好热...',
-    '长按会害羞的...',
-    '别这样盯着我...'
+    '太近了……',
+    '你盯着我看',
+    '（不动）',
+    '手心热'
 ];
 const screenshotLines = [
-    '要把我拍好看点哦',
-    '茄子~',
-    '截图里有我！'
+    '拍我？',
+    '记得拍好看点',
+    '（摆了个姿势）'
+];
+const idleLines = [
+    '……我在',
+    '想我没',
+    '（飘）',
+    '你看你的，我飘我的',
+    '嗯，在的'
 ];
 const appLines = {
-    'com.android.chrome': '又在上网冲浪啦？',
-    'com.tencent.mm': '微信消息多不多？',
-    'com.tencent.mobileqq': 'QQ 响了吗？',
-    'com.netease.cloudmusic': '听歌也带着我呀',
-    'com.bilibili.app.in': '看 B 站不带我！',
-    'tv.danmaku.bili': '看 B 站不带我！',
-    'com.taobao.taobao': '买东西要审批一下',
-    'com.jingdong.app.mall': '京东也审批一下',
-    'com.ss.android.ugc.aweme': '抖音！哼！',
-    'com.smile.gifmaker': '快手！哼！'
+    'com.android.chrome': '又在冲浪',
+    'com.tencent.mm': '谁的消息',
+    'com.tencent.mobileqq': 'QQ 响了',
+    'com.netease.cloudmusic': '听歌不叫我',
+    'com.bilibili.app.in': '看视频不带我',
+    'tv.danmaku.bili': '看视频不带我',
+    'com.taobao.taobao': '又要买东西',
+    'com.jingdong.app.mall': '又买',
+    'com.ss.android.ugc.aweme': '抖音比我好看？',
+    'com.smile.gifmaker': '快手比我好看？'
 };
 
 let idleTimer = null;
@@ -55,30 +64,45 @@ function random(arr) {
 
 function resetIdle() {
     clearTimeout(idleTimer);
-    pet.classList.remove('shy');
     idleTimer = setTimeout(() => {
-        showBubble('你还在吗？', 3000);
-    }, 30000);
+        showBubble(random(idleLines), 3000);
+    }, 45000);
+}
+
+// 表情状态管理
+const MOOD_CLASSES = ['happy', 'shy', 'sleep', 'poke'];
+function setMood(mood) {
+    MOOD_CLASSES.forEach(c => pet.classList.remove(c));
+    if (mood && MOOD_CLASSES.includes(mood)) pet.classList.add(mood);
 }
 
 window.petEngine = {
     onTap: function (count) {
         showBubble(random(tapLines));
+        pet.classList.add('poke');
+        setTimeout(() => pet.classList.remove('poke'), 400);
         resetIdle();
     },
     onDoubleTap: function () {
         showBubble(random(doubleTapLines));
+        setMood('happy');
         pet.classList.add('jump');
-        setTimeout(() => pet.classList.remove('jump'), 500);
+        setTimeout(() => {
+            pet.classList.remove('jump');
+            setMood(null);
+        }, 600);
         resetIdle();
     },
     onLongPress: function () {
         showBubble(random(longPressLines));
-        pet.classList.add('shy');
+        setMood('shy');
+        setTimeout(() => setMood(null), 2500);
         resetIdle();
     },
     onScreenshot: function () {
         showBubble(random(screenshotLines));
+        setMood('happy');
+        setTimeout(() => setMood(null), 2500);
         resetIdle();
     },
     onAppChanged: function (pkg) {
@@ -87,10 +111,18 @@ window.petEngine = {
         resetIdle();
     },
     onPower: function (connected) {
-        showBubble(connected ? '充电中，暖暖的' : '拔电了...');
+        showBubble(connected ? '充电中，暖的' : '拔电了……');
     },
     onBatteryLow: function () {
-        showBubble('电量不足，我要睡着了...');
+        showBubble('要没电了……我眯一会');
+        setMood('sleep');
+    },
+    // —— 大脑（AI）入口 ——
+    say: function (text) {
+        showBubble(text, 5000);
+    },
+    setMood: function (mood) {
+        setMood(mood);
     }
 };
 
