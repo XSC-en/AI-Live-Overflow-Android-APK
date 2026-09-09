@@ -48,7 +48,6 @@ const appLines = {
 
 let idleTimer = null;
 let bubbleTimer = null;
-let mood = null;
 
 function showBubble(text, duration = 2500) {
     bubbleText.textContent = text;
@@ -72,28 +71,49 @@ function resetIdle() {
 
 // 表情状态管理
 const MOOD_CLASSES = ['happy', 'shy', 'sleep', 'poke'];
-function setMood(m) {
+function setMood(mood) {
     MOOD_CLASSES.forEach(c => pet.classList.remove(c));
-    if (m && MOOD_CLASSES.includes(m)) pet.classList.add(m);
-    mood = m || null;
+    if (mood && MOOD_CLASSES.includes(mood)) pet.classList.add(mood);
 }
 
-// —— 吐泡泡 ——
+// —— 泡泡：深海生物感（睡觉时不吐） ——
+const BUBBLE_COLORS = [
+    'rgba(150,130,220,0.55)',
+    'rgba(190,170,250,0.4)',
+    'rgba(120,100,200,0.55)'
+];
 function spawnBubble() {
+    if (pet.classList.contains('sleep')) return;
     const b = document.createElement('div');
     b.className = 'bubble-float';
-    b.style.left = (38 + Math.random() * 24) + '%';
-    b.style.bottom = (57 + Math.random() * 5) + '%';
+    b.style.left = (15 + Math.random() * 70) + '%';
+    b.style.setProperty('--bubble-start', (6 + Math.random() * 10) + '%');
+    const sizePct = 2.5 + Math.random() * 4;
+    b.style.width = sizePct + '%';
+    b.style.height = sizePct + '%';
+    b.style.background = BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
     pet.appendChild(b);
-    setTimeout(() => b.remove(), 3300);
+    setTimeout(() => b.remove(), 6000);
 }
-
-// 平常：每 2.5~5 秒随机吐一个；开心时更勤
 setInterval(() => {
-    if (mood === 'sleep') return;
-    const chance = mood === 'happy' ? 0.75 : 0.45;
-    if (Math.random() < chance) spawnBubble();
-}, 2500);
+    if (Math.random() < 0.6) spawnBubble();
+}, 2600);
+
+// —— 随机大动作：偶尔翻个跟头/横移/缩成一团 ——
+const BIG_MOVES = ['spin', 'dash', 'shrink'];
+const BIG_LINES = {
+    spin: '（转了半圈）',
+    dash: '（咻——）',
+    shrink: '（缩成一团）'
+};
+setInterval(() => {
+    if (document.hidden) return;
+    const name = random(BIG_MOVES);
+    pet.classList.add('big-' + name);
+    if (Math.random() < 0.55) showBubble(BIG_LINES[name], 2000);
+    setTimeout(() => pet.classList.remove('big-' + name), 1400);
+    resetIdle();
+}, 24000);
 
 window.petEngine = {
     onTap: function (count) {
@@ -140,8 +160,8 @@ window.petEngine = {
     say: function (text) {
         showBubble(text, 5000);
     },
-    setMood: function (m) {
-        setMood(m);
+    setMood: function (mood) {
+        setMood(mood);
     }
 };
 
