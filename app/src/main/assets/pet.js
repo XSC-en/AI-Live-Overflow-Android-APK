@@ -71,7 +71,7 @@ function resetIdle() {
 
 // 表情状态管理（mood：表情；pose：身体姿态）
 const MOOD_CLASSES = ['happy', 'shy', 'sleep', 'poke'];
-const POSE_CLASSES = ['swim', 'crouch'];
+const POSE_CLASSES = ['swim', 'crouch', 'peek'];
 function setMood(mood) {
     MOOD_CLASSES.forEach(c => pet.classList.remove(c));
     if (mood && MOOD_CLASSES.includes(mood)) pet.classList.add(mood);

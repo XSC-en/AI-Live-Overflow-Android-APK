@@ -101,27 +101,74 @@ body {
     animation: glowPulse 1.6s ease-in-out infinite;
 }
 
-/* ---- 趴下姿态（聊天/图标上） ---- */
+/* ---- 躲藏偷看（屏幕边缘） ---- */
+#pet.peek .creature {
+    animation: peekBreathe 2.4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+#pet.peek .tentacle {
+    animation: none;
+    transform: scaleY(0.6);
+    transform-box: fill-box;
+    transform-origin: center top;
+}
+#pet.peek .eye {
+    animation: none;
+}
+/* 只露一只眼偷看 */
+#pet.peek .eye.right {
+    display: none;
+}
+#pet.peek .eye.left .eye-open {
+    display: block;
+}
+#pet.peek .eye.left .eye-normal {
+    display: none;
+}
+#pet.peek .glow {
+    animation: glowPulse 3.5s ease-in-out infinite;
+}
+#pet.peek .body {
+    animation: none;
+}
+
+/* ---- 趴下姿态 v2（聊天框/图标上） ---- */
 #pet.crouch .creature {
-    transform: translateY(14px) scaleY(0.7);
+    animation: crouchHover 4s ease-in-out infinite;
     transform-box: fill-box;
     transform-origin: center bottom;
 }
 #pet.crouch .tentacle {
     animation: none;
-    transform: scaleY(1.15) translateY(2px);
     transform-box: fill-box;
     transform-origin: center top;
 }
+/* 触手向两侧趴开 */
+#pet.crouch .t1 { transform: rotate(26deg) translate(2px, 2px) scaleY(0.8); }
+#pet.crouch .t2 { transform: rotate(13deg) translate(1px, 1px) scaleY(0.95); }
+#pet.crouch .t3 { transform: rotate(4deg) scaleY(1); }
+#pet.crouch .t4 { transform: rotate(-4deg) scaleY(1); }
+#pet.crouch .t5 { transform: rotate(-13deg) translate(-1px, 1px) scaleY(0.95); }
+#pet.crouch .t6 { transform: rotate(-26deg) translate(-2px, 2px) scaleY(0.8); }
 #pet.crouch .body {
     animation: none;
 }
 #pet.crouch .glow {
     animation: crouchGlow 3.5s ease-in-out infinite;
 }
+/* 趴着抬眼看：眼睛上移、半睁 */
 #pet.crouch .eye {
     animation: none;
-    transform: translateY(2px);
+    transform: translateY(-12px);
+}
+#pet.crouch .eye-open {
+    display: block;
+}
+#pet.crouch .eye-normal,
+#pet.crouch .eye-closed,
+#pet.crouch .eye-happy {
+    display: none;
 }
 
 /* ---- 水母动画 ---- */
@@ -284,6 +331,16 @@ body {
 @keyframes crouchGlow {
     0%, 100% { opacity: 0.35; }
     50% { opacity: 0.75; }
+}
+
+@keyframes peekBreathe {
+    0%, 100% { transform: translateX(16px) rotate(3deg) scale(0.9); }
+    50% { transform: translateX(18px) rotate(3.5deg) scale(0.94); }
+}
+
+@keyframes crouchHover {
+    0%, 100% { transform: translateY(16px) scale(1.12, 0.62); }
+    50% { transform: translateY(18px) scale(1.13, 0.6); }
 }
 
 /* ---- 泡泡（JS 动态生成） ---- */
