@@ -68,6 +68,13 @@ class OverlayService : Service() {
     private var lastForegroundApp = ""
     private var crouchedApp = ""
 
+    // 边缘偷看状态机
+    private var wanderPhase = "free"        // free / slideOut / peekHold / slideIn
+    private var phaseUntil = 0L
+    private var peekDirX = 1.0
+    private var peekDirY = 0.0
+    private var peekOut = 0
+
     companion object {
         private const val CHANNEL_ID = "pet_overlay_channel"
         private const val NOTIFICATION_ID = 1001
@@ -540,6 +547,7 @@ class OverlayService : Service() {
 
                     // 聊天/社交类 app：游到屏幕底部中央趴着（像趴在消息/输入框上）
                     if (lastForegroundApp in CHAT_APPS) {
+                        wanderPhase = "free"
                         val targetX = (screenW - p.width) / 2
                         val targetY = screenH - p.height - dpToPx(6)
                         val dx = (targetX - p.x).toFloat()
@@ -564,6 +572,7 @@ class OverlayService : Service() {
                     // 离开聊天 app，恢复游荡
                     if (crouchedApp.isNotEmpty()) {
                         crouchedApp = ""
+                        wanderPhase = "free"
                         js("setPose('swim')")
                     }
 
@@ -571,23 +580,57 @@ class OverlayService : Service() {
                     val now = System.currentTimeMillis()
                     if (now < restUntil) continue
 
+                    // —— 边缘偷看状态机：滑出 / 偷看 / 缩回 ——
+                    if (wanderPhase != "free") {
+                        when (wanderPhase) {
+                            "slideOut" -> {
+                                p.x += (peekDirX * 3f).toInt()
+                                p.y += (peekDirY * 3f).toInt()
+                                peekOut += 3
+                                if (peekOut >= (p.width * 0.6).toInt()) {
+                                    wanderPhase = "peekHold"
+                                    phaseUntil = System.currentTimeMillis() + 3200
+                                }
+                            }
+                            "peekHold" -> {
+                                if (System.currentTimeMillis() >= phaseUntil) {
+                                    wanderPhase = "slideIn"
+                                }
+                            }
+                            "slideIn" -> {
+                                p.x -= (peekDirX * 3f).toInt()
+                                p.y -= (peekDirY * 3f).toInt()
+                                if (p.x >= 0 && p.x + p.width <= screenW &&
+                                    p.y >= 0 && p.y + p.height <= screenH
+                                ) {
+                                    wanderPhase = "free"
+                                    js("setPose('swim')")
+                                    dirX = random.nextDouble() * 2 - 1
+                                    dirY = random.nextDouble() * 0.8 + 0.1
+                                }
+                            }
+                        }
+                        wm.updateViewLayout(view, p)
+                        continue
+                    }
+
                     // 自由游荡
                     p.x += (dirX * WANDER_SPEED).toInt()
                     p.y += (dirY * WANDER_SPEED).toInt()
 
                     var bounced = false
-                    if (p.x <= 0) { p.x = 0; dirX = abs(dirX); bounced = true }
-                    else if (p.x + p.width >= screenW) { p.x = screenW - p.width; dirX = -abs(dirX); bounced = true }
-                    if (p.y <= 0) { p.y = 0; dirY = abs(dirY); bounced = true }
-                    else if (p.y + p.height >= screenH) { p.y = screenH - p.height; dirY = -abs(dirY); bounced = true }
+                    if (p.x <= 0) { p.x = 0; bounced = true; peekDirX = -1.0; peekDirY = 0.0 }
+                    else if (p.x + p.width >= screenW) { p.x = screenW - p.width; bounced = true; peekDirX = 1.0; peekDirY = 0.0 }
+                    if (p.y <= 0) { p.y = 0; bounced = true; peekDirY = -1.0; peekDirX = 0.0 }
+                    else if (p.y + p.height >= screenH) { p.y = screenH - p.height; bounced = true; peekDirY = 1.0; peekDirX = 0.0 }
 
                     wm.updateViewLayout(view, p)
 
                     if (bounced) {
-                        js("bump()")
-                        // 撞边后随机弹开
-                        dirX = (random.nextDouble() * 2 - 1)
-                        dirY = random.nextDouble() * 0.8 + 0.1
+                        // 贴边 → 悄悄滑出屏幕，只剩半张脸偷看
+                        wanderPhase = "slideOut"
+                        peekOut = 0
+                        js("setPose('peek')")
                         continue
                     }
 
